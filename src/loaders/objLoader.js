@@ -16,7 +16,18 @@ export const objLoader = (obj) => {
     } else if (key === `f`) {
       data.forEach(vertex => {
         const [g, t, n] = vertex.split(`/`);
-        object = object.concat(g && geometries[g], t && textures[t], n && normals[n]);
+
+        if (g) {
+          object = object.concat(geometries[g]);
+        }
+
+        if (t) {
+          object = object.concat(textures[t]);
+        }
+
+        if (n) {
+          object = object.concat(normals[n]);
+        }
       })
     }
   })
