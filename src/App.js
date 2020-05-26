@@ -1,24 +1,22 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, {useCallback, useRef} from 'react';
 import './App.css';
+import {WebGLRenderer} from './renderer';
 
 function App() {
+  const renderer = useRef(null);
+  const canvasRefCallback = useCallback(canvas => {
+    console.log(canvas);
+    if (renderer.current) {
+      renderer.current.stop();
+    }
+
+    renderer.current = WebGLRenderer(canvas);
+    renderer.current.start();
+  }, [renderer]);
+  console.log('rerun');
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <canvas ref={canvasRefCallback} style={{width: `100vw`, height: `100vh`}}/>
     </div>
   );
 }
