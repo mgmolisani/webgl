@@ -5,13 +5,12 @@ const createProgram = (gl) => {
       #version 100
       
       attribute vec3 a_position;
-      attribute vec3 a_color;
-      varying vec3 v_color;
+      uniform mat4 u_model;
+      uniform mat4 u_view;
       uniform mat4 u_ortho;
       
       void main() {
-        gl_Position = u_ortho * vec4(a_position, 1.0);
-        v_color = a_color;
+        gl_Position = u_ortho * u_view * u_model * vec4(a_position, 1.0);
       }
     `;
 
@@ -27,10 +26,10 @@ const createProgram = (gl) => {
       #version 100
       
       precision mediump float;
-      varying vec3 v_color;
       
       void main() {
-        gl_FragColor = vec4(v_color, 1.0);
+        vec3 color = vec3(gl_FragCoord.z);
+        gl_FragColor = vec4(color, 1.0);
       }
     `;
 
@@ -77,7 +76,7 @@ export const WebGLRenderer = (canvas) => {
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.drawElements(gl.TRIANGLES, 3 * 12, gl.UNSIGNED_SHORT, 0);
   };
 
   const step = (timestamp) => {
@@ -90,27 +89,56 @@ export const WebGLRenderer = (canvas) => {
     resizeObserver.observe(canvas);
 
     const vertices = new Float32Array([
-      -1.0, -1.0, 0.0, 1.0, 0.0, 0.0,
-      1.0, -1.0, 0.0, 0.0, 1.0, 0.0,
-      0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
+      0.0, 0.0, 0.0,
+      0.0, 0.0, 1.0,
+      0.0, 1.0, 0.0,
+      0.0, 1.0, 1.0,
+      1.0, 0.0, 0.0,
+      1.0, 0.0, 1.0,
+      1.0, 1.0, 0.0,
+      1.0, 1.0, 1.0,
+    ]);
+
+    const indices = new Uint16Array([
+      0, 6, 4,
+      0, 2, 6,
+      0, 3, 2,
+      0, 1, 3,
+      2, 7, 6,
+      2, 3, 7,
+      4, 6, 7,
+      4, 7, 5,
+      0, 4, 5,
+      0, 5, 1,
+      1, 5, 7,
+      1, 7, 3
     ]);
 
     const program = createProgram(gl);
     gl.useProgram(program);
 
     const positionLocation = gl.getAttribLocation(program, `a_position`);
-    const colorLocation = gl.getAttribLocation(program, `a_color`);
     gl.enableVertexAttribArray(positionLocation);
-    gl.enableVertexAttribArray(colorLocation);
     const vbo = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-    const stride = 4 * 6;
-    gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, stride, 0);
-    gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, stride, 4 * 3);
+    const ebo = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
+    const modelLocation = gl.getUniformLocation(program, `u_model`);
+    const translationMatrix = Mat4.translate(-0.5, -0.5, -0.5);
+    const scaleMatrix = Mat4.scale(0.5, 0.5, 0.5);
+    const rotationMatrix = Mat4.rotate(Math.PI / 4, [0.0, 1.0, 0.0]);
+    const modelMatrix = Mat4.multiply(Mat4.multiply(rotationMatrix, scaleMatrix), translationMatrix);
+    gl.uniformMatrix4fv(modelLocation, false, new Float32Array(modelMatrix));
+    const viewLocation = gl.getUniformLocation(program, `u_view`);
+    const viewMatrix = Mat4.lookAt([0.0, 3.0, 3.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+    gl.uniformMatrix4fv(viewLocation, false, new Float32Array(viewMatrix));
     const orthoLocation = gl.getUniformLocation(program, `u_ortho`);
     const aspectRatio = canvas.clientWidth / canvas.clientHeight;
-    gl.uniformMatrix4fv(orthoLocation, false, new Float32Array(Mat4.ortho(-aspectRatio, aspectRatio, -1.0, 1.0, -1.0, 1.0)));
+    const ortho = Mat4.ortho(-aspectRatio, aspectRatio, -1.0, 1.0, 0.1, 100);
+    gl.uniformMatrix4fv(orthoLocation, false, new Float32Array(ortho));
     step(performance.now());
   };
 
