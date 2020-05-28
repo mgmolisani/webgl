@@ -99,11 +99,10 @@ const createProgram = (gl) => {
         float specular_strength = 0.5;
         vec3 view_direction = normalize(u_view_position - v_world_position);
         vec3 reflect_direction = reflect(-light_direction, normal);  
-        float shininess = pow(max(dot(view_direction, reflect_direction), 0.0), 256.0);
+        float shininess = pow(max(dot(view_direction, reflect_direction), 0.0), 32.0);
         vec3 specular = specular_strength * shininess * light_color;
         vec3 light = ambient + diffuse + specular;
-        // gl_FragColor = vec4(light * vec3(1.0, 0.5, 0.25), 1.0);
-        gl_FragColor = vec4(model_color, 1.0);
+        gl_FragColor = vec4(light * model_color, 1.0);
       }
     `;
 
@@ -182,16 +181,17 @@ export const WebGLRenderer = (canvas) => {
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, true, stride, 0);
     gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, stride, 3 * 4);
     const modelLocation = gl.getUniformLocation(program, `u_model`);
-    const modelMatrix = Mat4.identity();
+    const modelMatrix = Mat4.scale(1, 1, 1);
     gl.uniformMatrix4fv(modelLocation, false, new Float32Array(modelMatrix));
-    const cameraPosition = [3.0, 3.0, 3.0];
-    const lightPosition = [-3.0, 3.0, 3.0];
+    const cameraPosition = [1.0, 2.0, 2.0];
+    const lightPosition = [0.0, 1.0, -1.0];
     const viewLocation = gl.getUniformLocation(program, `u_view`);
     const viewMatrix = Mat4.lookAt(cameraPosition, [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
     gl.uniformMatrix4fv(viewLocation, false, new Float32Array(viewMatrix));
     const orthoLocation = gl.getUniformLocation(program, `u_ortho`);
     const aspectRatio = canvas.clientWidth / canvas.clientHeight;
     const ortho = Mat4.ortho(-aspectRatio, aspectRatio, -1.0, 1.0, 0.1, 100);
+    //const ortho = Mat4.perspective(Math.PI / 3, aspectRatio, 0.1, 1000);
     gl.uniformMatrix4fv(orthoLocation, false, new Float32Array(ortho));
     const lightPositionLocation = gl.getUniformLocation(program, `u_light_position`);
     gl.uniform3fv(lightPositionLocation, new Float32Array(lightPosition));

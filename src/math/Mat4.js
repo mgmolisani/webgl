@@ -55,6 +55,18 @@ const ortho = (left, right, bottom, top, near, far) => {
   ];
 };
 
+const perspective = (fieldOfView, aspectRatio, near, far) => {
+  const scale = Math.tan(Math.PI * 0.5 - 0.5 * fieldOfView);
+  const rangeInverse = 1.0 / (near - far);
+
+  return [
+    scale / aspectRatio, 0.0, 0.0, 0.0,
+    0.0, scale, 0.0, 0.0,
+    0.0, 0.0, (near + far) * rangeInverse, -1.0,
+    0.0, 0.0, near * far * rangeInverse * 2, 0.0,
+  ]
+}
+
 const multiply = (a, b) => {
   return [
     b[0] * a[0] + b[1] * a[4] + b[2] * a[8] + b[3] * a[12], b[0] * a[1] + b[1] * a[5] + b[2] * a[9] + b[3] * a[13], b[0] * a[2] + b[1] * a[6] + b[2] * a[10] + b[3] * a[14], b[0] * a[3] + b[1] * a[7] + b[2] * a[11] + b[3] * a[15],
@@ -120,4 +132,5 @@ export const Mat4 = {
   scale,
   identity,
   lookAt,
+  perspective,
 };
